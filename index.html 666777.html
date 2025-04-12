@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>ระบบจัดการสมาชิก</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #f2f2f2;
+            color: #333;
+        }
+        .dark-mode {
+            background-color: #222;
+            color: #fff;
+        }
+        .box {
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            background-color: white;
+        }
+        .dark-mode .box {
+            background-color: #333;
+        }
+        button {
+            margin-top: 10px;
+        }
+        .expired {
+            color: red;
+        }
+        .active {
+            color: green;
+        }
+    </style>
+</head>
+<body onload="loadTheme(); checkLogin();">
+
+<div id="loginPage" class="box">
+    <h2>Login</h2>
+    Username: <input type="text" id="username"><br>
+    Password: <input type="password" id="password"><br>
+    Security Code: <input type="password" id="securityCode"><br>
+    <button onclick="login()">Login</button>
+</div>
+
+<div id="mainPage" class="box" style="display:none;">
+    <h2>ระบบจัดการสมาชิก</h2>
+    <button onclick="toggleTheme()">เปลี่ยนธีม</button> 
+    <button onclick="logout()">Logout</button>
+
+    <h3>รายชื่อสมาชิก: <span id="memberCount"></span> คน</h3>
+    <ul id="userList"></ul>
+
+    <hr>
+
+    <h3>สร้างผู้ใช้ใหม่</h3>
+    Username: <input type="text" id="newUsername"><br>
+    Password: <input type="password" id="newPassword"><br>
+    Security Code: <input type="password" id="newSecurityCode"><br>
+    วันหมดอายุ: <input type="date" id="expiryDate"><br>
+    <button onclick="createNewUser()">สร้างผู้ใช้</button>
+</div>
+
+<script>
+    let users = JSON.parse(localStorage.getItem("users")) || [];
+
+    function toggleTheme() {
+        document.body.classList.toggle("dark-mode");
+        localStorage.setItem("theme", document.body.classList.contains("dark-mode") ? "dark" : "light");
+    }
+
+    function loadTheme() {
+        if (localStorage.getItem("theme") === "dark") {
+            document.body.classList.add("dark-mode");
+        }
+    }
+
+    function checkLogin() {
+        if (localStorage.getItem("login") === "true") {
+            showMainPage();
+        }
+    }
+
+    function login() {
+        const username = document.getElementById("username").value.trim();
+        const password = document.getElementById("password").value.trim();
+        const securityCode = document.getElementById("securityCode").value.trim();
+
+        const user = users.find(u => u.username === username && u.password === password && u.securityCode === securityCode);
+        if (user) {
+            localStorage.setItem("login", "true");
+            showMainPage();
+        } else {
+            alert("ข้อมูลไม่ถูกต้อง");
+        }
+    }
+
+    function logout() {
+        localStorage.removeItem("login");
+        location.reload();
+    }
+
+    function showMainPage() {
+        document.getElementById("loginPage").style.display = "none";
+        document.getElementById("mainPage").style.display = "block";
+        showUsers();
+    }
+
+    function showUsers() {
+        const list = document.getElementById("userList");
+        list.innerHTML = "";
+        users.forEach((user, index) => {
+            const li = document.createElement("li");
+            const expiryDate = new Date(user.expiryDate);
+            const currentDate = new Date();
+
+            const removeButton = document.createElement("button");
+            removeButton.textContent = "ลบ";
+            removeButton.onclick = () => deleteUser(index); // เพิ่มปุ่มลบสมาชิก
+
+            if (expiryDate < currentDate) {
+                li.classList.add("expired");
+                li.textContent = `${user.username} - หมดอายุ: ${user.expiryDate}`;
+            } else {
+                li.classList.add("active");
+                li.textContent = `${user.username} - หมดอายุ: ${user.expiryDate} (ใช้งานได้)`;
+            }
+
+            li.appendChild(removeButton); // เพิ่มปุ่มลบไปยังรายการ
+            list.appendChild(li);
+        });
+        document.getElementById("memberCount").textContent = users.length;
+    }
+
+    function deleteUser(index) {
+        // ลบผู้ใช้จาก users
+        users.splice(index, 1);
+        localStorage.setItem("users", JSON.stringify(users));
+        showUsers(); // อัปเดต UI หลังจากลบสมาชิก
+    }
+
+    function createNewUser() {
+        const newUsername = document.getElementById("newUsername").value.trim();
+        const newPassword = document.getElementById("newPassword").value.trim();
+        const newSecurityCode = document.getElementById("newSecurityCode").value.trim();
+        const expiryDate = document.getElementById("expiryDate").value;
+
+        if (!newUsername || !newPassword || !newSecurityCode || !expiryDate) {
+            alert("กรุณากรอกข้อมูลให้ครบ");
+            return;
+        }
+
+        // เพิ่มสมาชิกใหม่
+        users.push({ username: newUsername, password: newPassword, securityCode: newSecurityCode, expiryDate: expiryDate });
+        localStorage.setItem("users", JSON.stringify(users));
+
+        alert("สร้างผู้ใช้สำเร็จ");
+        showUsers();
+    }
+</script>
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
